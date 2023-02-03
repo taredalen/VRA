@@ -10,15 +10,19 @@ using namespace zbar;
 VideoCapture capture;
 Mat frame;
 
-void keyboard(unsigned char key, int x, int y) {
+
+void keyboard(unsigned char key, int x, int y)
+{
 
 }
 
-void drag(int x, int y) {
+void drag(int x, int y)
+{
 
 }
 
-void mouse(int button, int state, int x, int y) {
+void mouse(int button, int state, int x, int y)
+{
 
 }
 
@@ -45,11 +49,13 @@ void init() {
     glEnable(GL_DEPTH_TEST); // consider depth
 }
 
-void matToTexture(Mat image) {
+void matToTexture(Mat image)
+{
     GLuint texture_id;
     if (image.empty())
         cerr << "Error : couldn't read the image ..." << endl;
-    else {
+    else
+    {
         glPushMatrix(); // push the current matrix down the stack
         glDisable(GL_LIGHTING); // disable lighting to preserve camera image light
         glDisable(GL_DEPTH_TEST); // disable depth comparisons
@@ -92,11 +98,32 @@ void matToTexture(Mat image) {
 }
 
 vector<Point2f> qrPoints, prev_qrPoints;
+Mat cameraRotationMatrix;
+Vec3f cameraTranslation;
+
+void poseEstimation() {
+    vector<Point3f> p3d;
+    p3d.push_back(Point3f(-50, 50, 0));
+    p3d.push_back(Point3f(-50, -50, 0));
+    p3d.push_back(Point3f(50, -50, 0));
+    p3d.push_back(Point3f(50, 50, 0));
+    Mat cameraMatrix = (Mat_<float>(3, 3) << 605.57, 0, 334.90, 0, 591.46, 238.77, 0, 0, 1);
+
+    Vec3f rvec;
+
+    solvePnP(p3d, qrPoints, cameraMatrix, noArray(), rvec, cameraTranslation);
+    Rodrigues(rvec, cameraRotationMatrix);
+
+}
+
 
 int qrScanner(Mat gray) {
     // declare variables
     ImageScanner scanner;
+    //vector<Point2f> qrPoints, prev_qrPoints;
+
     qrPoints.clear();
+
     string qrName;
     int num_qrPoints = 0;
     // convert image data to raw data
@@ -106,7 +133,9 @@ int qrScanner(Mat gray) {
     // scan the image for barcodes
     int n = scanner.scan(image);
     // extract results
-    for (Image::SymbolIterator symbol = image.symbol_begin();symbol != image.symbol_end(); ++symbol) {
+    for (Image::SymbolIterator symbol = image.symbol_begin();
+         symbol != image.symbol_end(); ++symbol)
+    {
         // get useful results
         qrName = symbol->get_data();
         num_qrPoints = symbol->get_location_size();
@@ -117,9 +146,12 @@ int qrScanner(Mat gray) {
         for (int i = 0; i < 4; i++) {
             line(frame, qrPoints[i], qrPoints[(i + 1) % 4], CV_RGB(0, 255, 0), 2, LINE_AA);
         }
-    }
-    if (norm(prev_qrPoints, qrPoints, NORM_L2) < 5) {
-        qrPoints = prev_qrPoints;
+        if (!prev_qrPoints.empty()) {
+            if (cv::norm(prev_qrPoints, qrPoints, NORM_L2) < 5) {
+                qrPoints = prev_qrPoints;
+
+            }
+        }
     }
     prev_qrPoints = qrPoints;
 
@@ -132,12 +164,9 @@ void processImage() {
     waitKey(40);
     Mat gray;
     cvtColor(frame, gray, COLOR_BGR2GRAY);
-    qrScanner(gray);
-}
-
-void poseEstimation() {
-    vector<Point3f> p3d;
-    p3d.push_back(Point3f(-50, 50, 0));
+    if (qrScanner(gray) == 4) {
+        poseEstimation();
+    }
 
 }
 
@@ -159,16 +188,40 @@ void display()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(0, 0, 0, 0, 0, 1, 0, 1, 0); // transform the modelview into a right-handed coordinate system
+    float qrLength = norm(Mat(qrPoints[0]), Mat(qrPoints[1]), NORM_L2);
+    float objectLength = 100;
+    float cam_x_px = cameraTranslation[0] * qrLength / objectLength;
+    float cam_y_px = cameraTranslation[1] * qrLength / objectLength;
+
+    float zClip = (zFar - zNear) * cameraTranslation[2] / 2000;
+    float xClip = -zClip * 2 * cam_x_px / frame.cols;
+    float yClip = -zClip * 2 * cam_y_px / frame.rows;
 
     // add translations
-    glTranslatef(0, 0, 10);
+    glTranslatef(xClip, yClip, zClip);
 
     // add rotations
+    glRotatef(180, 0, 0, 1);
+    float  rot_mat[16] = {
+            cameraRotationMatrix.at<float>(0),
+            cameraRotationMatrix.at<float>(3),
+            cameraRotationMatrix.at<float>(6), 0,
+            cameraRotationMatrix.at<float>(1),
+            cameraRotationMatrix.at<float>(4),
+            cameraRotationMatrix.at<float>(7), 0,
+            cameraRotationMatrix.at<float>(2),
+            cameraRotationMatrix.at<float>(5),
+            cameraRotationMatrix.at<float>(8), 0,
+            0, 0, 0, 1
+    };
+
+
+    glMultMatrixf(rot_mat);
 
     // add scale
 
     // load 3D model
-    glutSolidTeapot(1); // draw a teapot
+    glutSolidTeapot(5); // draw a teapot
 
     glPopMatrix(); // pop the current matrix stack
 
@@ -176,7 +229,8 @@ void display()
     glutPostRedisplay(); // redisplay
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     capture.open("/Users/sebila/CLionProjects/VRA/Tutorial 5/videoTuto6.mp4");
     if (!capture.isOpened())
     {
