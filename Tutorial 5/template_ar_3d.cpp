@@ -10,19 +10,34 @@ using namespace zbar;
 VideoCapture capture;
 Mat frame;
 
+vector<Point2f> qrPoints, prev_qrPoints;
+Mat cameraRotationMatrix;
+Vec3f cameraTranslation;
 
-void keyboard(unsigned char key, int x, int y)
-{
+// 3D interaction
+float ui_rot_Z = 0, ui_rot_Y = 0, ui_rot_X = 0;
+float previousX = 0, previousY = 0;
+float uiScale = 1;
+bool START = true;
+
+// ---------------------------------------------------------------------------------------------------------------------
+void keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+        case 27:
+            exit(0);
+            break;
+        case 's':
+            START = !START;
+            break;
+    }
+}
+
+void drag(int x, int y) {
+
 
 }
 
-void drag(int x, int y)
-{
-
-}
-
-void mouse(int button, int state, int x, int y)
-{
+void mouse(int button, int state, int x, int y) {
 
 }
 
@@ -49,8 +64,7 @@ void init() {
     glEnable(GL_DEPTH_TEST); // consider depth
 }
 
-void matToTexture(Mat image)
-{
+void matToTexture(Mat image) {
     GLuint texture_id;
     if (image.empty())
         cerr << "Error : couldn't read the image ..." << endl;
@@ -97,10 +111,6 @@ void matToTexture(Mat image)
     }
 }
 
-vector<Point2f> qrPoints, prev_qrPoints;
-Mat cameraRotationMatrix;
-Vec3f cameraTranslation;
-
 void poseEstimation() {
     vector<Point3f> p3d;
     p3d.push_back(Point3f(-50, 50, 0));
@@ -115,7 +125,6 @@ void poseEstimation() {
     Rodrigues(rvec, cameraRotationMatrix);
 
 }
-
 
 int qrScanner(Mat gray) {
     // declare variables
@@ -170,11 +179,16 @@ void processImage() {
 
 }
 
-void display()
-{
+void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear color and depth buffer at each display call
 
-    processImage();
+    if (START) {
+        double time = getTickCount();
+        processImage();
+        time = getTickCount() - time;
+        string label = format("FPS: %.0f", getTickFrequency() / time);
+        putText(frame, label, Point(10, frame.rows - 10), FONT_HERSHEY_SIMPLEX, 0.8, CV_RGB(0, 255, 0), 1, LINE_AA);
+    }
 
     matToTexture(frame); // transform the camera frame into a GL texture
 
@@ -215,7 +229,6 @@ void display()
             0, 0, 0, 1
     };
 
-
     glMultMatrixf(rot_mat);
 
     // add scale
@@ -229,8 +242,7 @@ void display()
     glutPostRedisplay(); // redisplay
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     capture.open("/Users/sebila/CLionProjects/VRA/Tutorial 5/videoTuto6.mp4");
     if (!capture.isOpened())
     {
