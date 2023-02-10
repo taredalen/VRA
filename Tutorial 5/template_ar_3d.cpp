@@ -20,7 +20,23 @@ float previousX = 0, previousY = 0;
 float uiScale = 1;
 bool START = true;
 
+// animation
+float ui_rot_increment = 5;
+float ui_rot_speed = 0.1;
+bool uiAnim = false;
+
 // ---------------------------------------------------------------------------------------------------------------------
+void timer(int value) {
+    if (uiAnim == true) {
+        ui_rot_Y += ui_rot_speed * ui_rot_increment;
+        glutTimerFunc(50, timer, 0);
+    }
+}
+
+void idle() {
+    glutPostOverlayRedisplay();
+}
+
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
         case 27:
@@ -29,16 +45,49 @@ void keyboard(unsigned char key, int x, int y) {
         case 's':
             START = !START;
             break;
+        case ' ':
+            ui_rot_X = 0;
+            ui_rot_Y = 0;
+            ui_rot_Z = 0;
+            uiScale = 1;
+            uiAnim = false;
+            break;
+        case 'a':
+            uiAnim = true;
+            ui_rot_speed = 0.5;
+            glutTimerFunc(1, timer, 0);
+            break;
+        case 'A':
+            uiAnim = true;
+            ui_rot_speed = -0.5;
+            glutTimerFunc(1, timer, 0);
+            break;
     }
 }
 
 void drag(int x, int y) {
+    ui_rot_Y += 0.5 * (x - previousX);
+    ui_rot_X -= 0.5 * (y - previousY);
 
-
+    previousX = x;
+    previousY = y;
 }
 
 void mouse(int button, int state, int x, int y) {
-
+    previousX = x;
+    previousY = y;
+    switch (button) {
+        case 3: // zoom out
+            uiScale += 0.1;
+            if (uiScale > 10) uiScale = 10;
+            break;
+        case 4: // zoom in
+            uiScale -= 0.1;
+            if (uiScale < 1) uiScale = 1;
+            break;
+        default:
+            break;
+    }
 }
 
 void init() {
@@ -176,7 +225,6 @@ void processImage() {
     if (qrScanner(gray) == 4) {
         poseEstimation();
     }
-
 }
 
 void display() {
@@ -214,6 +262,11 @@ void display() {
     // add translations
     glTranslatef(xClip, yClip, zClip);
 
+    // rotation UI
+    glRotatef(ui_rot_Z, 0, 0, 1);
+    glRotatef(ui_rot_Y, 0, 1, 0);
+    glRotatef(ui_rot_X, 1, 0, 0);
+
     // add rotations
     glRotatef(180, 0, 0, 1);
     float  rot_mat[16] = {
@@ -232,6 +285,7 @@ void display() {
     glMultMatrixf(rot_mat);
 
     // add scale
+    glScalef(uiScale, uiScale, uiScale);
 
     // load 3D model
     glutSolidTeapot(5); // draw a teapot
@@ -244,8 +298,7 @@ void display() {
 
 int main(int argc, char** argv) {
     capture.open("/Users/sebila/CLionProjects/VRA/Tutorial 5/videoTuto6.mp4");
-    if (!capture.isOpened())
-    {
+    if (!capture.isOpened()) {
         cerr << "Couldn't open the video ..." << endl;
         return 1;
     }
