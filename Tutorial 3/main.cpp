@@ -11,7 +11,7 @@ using namespace dnn;
 VideoCapture capture;
 Mat frame;
 
-string path = "/Users/sebila/CLionProjects/VRA/Tutorial3/yolo/";
+string path = "/Users/sebila/CLionProjects/VRA/Tutorial 3/yolo/";
 
 string windowName = "Deep Learning classification";
 int num_frames = 0;

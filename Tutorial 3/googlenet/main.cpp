@@ -13,7 +13,7 @@ string windowName = "Deep Learning Image Classification";
 int num_frames = 0;
 int slider_pos = 0, slider_pos_old = 0;
 
-string path = "/Users/sebila/CLionProjects/VRA/Tutorial3/";
+string path = "/Users/sebila/CLionProjects/VRA/Tutorial 3/";
 
 int main() {
     string file = path + "googlenet/classes_names_googlenet.txt";
