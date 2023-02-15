@@ -21,7 +21,7 @@ vector<KeyPoint> kp_query_inlier, kp_train_inlier;
 
 void loadImages() {
     vector<string> files;
-    glob("../data/markers", files);
+    glob("/Users/sebila/CLionProjects/VRA/Tutorial 2/data/markers", files);
     for (const auto &file : files) {
         Mat img = imread(file);
         if (img.empty()) {
@@ -90,7 +90,7 @@ int main() {
         cout << "Detection and description done " << endl;
     }
 
-    capture.open("../data/videoTuto3.MOV");
+    capture.open("/Users/sebila/CLionProjects/VRA/Tutorial 2/data/videoTuto.MOV");
     namedWindow(windowName, WINDOW_AUTOSIZE);
     while (true) {
         capture >> queryFrame;

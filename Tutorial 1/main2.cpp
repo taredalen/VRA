@@ -1,6 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#define IMAGE_PATH "../data/images/"
+#define IMAGE_PATH "/Users/sebila/CLionProjects/VRA/Tutorial 1/data/images/"
 
 using namespace cv;
 using namespace std;
@@ -231,14 +231,14 @@ int findContour() {
 
 
 int main() {
-    // readDisplayImage(IMAGE_PATH "landscape.jpg");
+     // readDisplayImage(IMAGE_PATH "landscape.jpg");
     // filtering2D(IMAGE_PATH "plane.jpg");
-    // smoothing(IMAGE_PATH "monalisa.jpg");
+     smoothing(IMAGE_PATH "monalisa.jpg");
     // morphology(IMAGE_PATH "apple.png");
     // thresholding(IMAGE_PATH "tiger.jpg");
     // edgeDetection(IMAGE_PATH "building.jpg"); // Exercice 6 : Détection de contours
     // histogramEqualization(IMAGE_PATH "bird.jpg");
     // templateMatching();
-    findContour();
+    //findContour();
     return 0;
 }
