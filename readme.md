@@ -65,6 +65,7 @@ Methods that use Region Proposal Networks perform multiple iterations for the sa
 ![image](https://assets-global.website-files.com/5d7b77b063a9066d83e1209c/63c697fd4ef3d83d2e35a8c2_YOLO%20architecture-min.jpg)
  
 
+
 ### 1. YOLO grid
 Yolo divides a picture into a grid of NxM cells. For each cell, it tries to predict a bounding box for an object that would be centered in that cell. 
 
@@ -101,6 +102,8 @@ However in the YOLO architecture, the number of detection boxes per grid cell is
 
 
 # Steps
+[(Back to top)](#table-of-contents)
+
 
 ### Part 1: Loading the pre-trained model
 To test YOLOv4 in real time on a video, the YOLOv4-leaky version is used. 
@@ -115,6 +118,8 @@ The input image of the neural network must be in a certain format called a blob.
 
 
 ### Part 3 : Post-traitement
+[(Back to top)](#table-of-contents)
+
 
 The model produces bounding boxes of outputs which are represented by a vector of 5 elements, plus the number of classes.
 The first 4 elements represent the center x, the center y, the width and the height of the bounding box. The fifth element represents the certainty of the box to encompass an object.
@@ -123,6 +128,8 @@ The bounding boxes are then filtered using the confidence threshold, they are su
 
 
 # Performances 
+[(Back to top)](#table-of-contents)
+
 
 Improves YOLOv3’s AP and FPS by 10% and 12%, respectively[5]
 
