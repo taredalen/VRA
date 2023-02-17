@@ -88,7 +88,7 @@ Width and height (w, h) calculations use a sigmoid activation so as to fall in t
 ![image](https://www.oreilly.com/api/v2/epubs/9781098102357/files/assets/pmlc_0406.png)
 
 
-###3. Loss function
+### 3. Loss function
 
 
 In object detection, as in any supervised learning setting, the correct answers are provided in the training data: ground truth boxes and their classes. During training the network predicts detection boxes, and it has to take into account errors in the boxes’ locations and dimensions as well as misclassification errors, and also penalize detections of objects where there aren’t any. The first step, though, is to correctly pair ground truth boxes with predicted boxes so that they can be compared. In the YOLO architecture, if each grid cell predicts a single box, this is straightforward. A ground truth box and a predicted box are paired if they are centered in the same grid cell.
@@ -102,19 +102,19 @@ However in the YOLO architecture, the number of detection boxes per grid cell is
 
 # Steps
 
-###Part 1: Loading the pre-trained model
+### Part 1: Loading the pre-trained model
 To test YOLOv4 in real time on a video, the YOLOv4-leaky version is used. 
 
 YOLOv4-leaky is efficient in terms of accuracy and more flexible on CPU computing time  (from 4GB-RAM GPUs). We will use pre-trained model on a base of images of 80 categories whose names are saved in the classes file.txt.
 The weight and configuration files are respectively: yolov4-leaky.weights and yolov4-leaky.cfg.
 
 
-###Part 2: Video processing and blob preprocessing
+### Part 2: Video processing and blob preprocessing
 
 The input image of the neural network must be in a certain format called a blob. Once the image is read from the video stream, it is transmitted to the blobFromImage function to convert it into a blob object used as input to the network. In this process, the model normalizes the image and resizes to a given size.   The average is set by default and the swapRB parameter is set to true because OpenCV uses BGR images. The output blob object is then transmitted to the network by the setInput function to obtain a list of blobs. These blobs are then processed in order to filter out those with low confidence scores.
 
 
-###Part 3 : Post-traitement
+### Part 3 : Post-traitement
 
 The model produces bounding boxes of outputs which are represented by a vector of 5 elements, plus the number of classes.
 The first 4 elements represent the center x, the center y, the width and the height of the bounding box. The fifth element represents the certainty of the box to encompass an object.
