@@ -3,39 +3,52 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iomanip>
+// #include <conio.h>
+#include <GLUT/glut.h>
+
 
 using namespace cv;
 using namespace std;
 using namespace dnn;
+using namespace chrono;
 
 VideoCapture capture;
 Mat frame;
 
-string path = "/Users/sebila/CLionProjects/VRA/Mini Projet/";
+string path = "/Users/sebila/CLionProjects/VRA/Mini Projet/data/";
+string windowName = "Deep Learning Detection";
 
-string windowName = "Deep Learning classification";
+
+vector<string> object_interest{ "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cow", "horse", "sheep", "monitor" };
+
+
 int num_frames = 0;
 int slider_pos = 0, slider_old_pos = 0;
+bool START = true;
+bool show_all = true;
 
 vector<string> classes;
+vector<Scalar> colors = { Scalar(255, 255, 0), Scalar(0, 255, 0), cv::Scalar(0, 255, 255), Scalar(255, 0, 0) };
 
-
-void drawPredictions(int classId, float confidence, Rect box) {
-    rectangle(frame, box, CV_RGB(0, 255, 0));
+void drawPredictions(int classId, float confidence,Rect box) {
+    Scalar_<double> color = colors[classId % colors.size()];
     string label = format("%s: %.2f", classes[classId].c_str(), confidence);
-    putText(frame, label, Point(box.x, box.y), FONT_HERSHEY_SIMPLEX, 0.5, CV_RGB(0, 255, 0), 1, LINE_AA);
+    rectangle(frame, box, color, 1);
+    rectangle(frame, Point(box.x, box.y + 30), Point(box.x + box.width, box.y), color, FILLED);
+    putText(frame, label, Point(box.x + 5, box.y + 30), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 0), 2, LINE_AA);
+
 }
 
 void postProcessing(vector<Mat> outs, Net net) {
-    float confThreshold = 0.35;
+    float confThreshold = 0.2;
+    double nmsThreshold = 0.4;
 
     vector<int> classIds;
     vector<float>confidences;
     vector<Rect> boxes;
+
     for (int i = 0; i < outs.size(); i++) {
         Mat outBlob = Mat(outs[i].size(), outs[i].depth(), outs[i].data);
-
 
         for (int j = 0; j < outBlob.rows; j++) {
             Mat scores = outBlob.row(j).colRange(5, outBlob.cols);
@@ -57,43 +70,49 @@ void postProcessing(vector<Mat> outs, Net net) {
             }
         }
     }
-    double nmsThreshold = 0.5;
     vector<int> indices;
     NMSBoxes(boxes, confidences, confThreshold, nmsThreshold, indices);
+
+
     for (int i = 0; i < indices.size(); i++) {
+        if (!show_all && find(object_interest.begin(), object_interest.end(), classes[classIds[indices[i]]]) == object_interest.end()) continue;
         int idx = indices[i];
         Rect box = boxes[idx];
         drawPredictions(classIds[idx], confidences[idx], box);
     }
 }
 
-int main() {
-
-    string file = path + "yolo/classes_names_yolo.txt";
-
+int load_classes() {
+    string file = path + "classes.txt";
     ifstream ifs(file.c_str());
     if (!ifs.is_open()) {
-        cerr << file << " not found" << endl;
+        cerr << file << "file not found" << endl;
         return 1;
     }
-
     string line;
     while (getline(ifs, line)) {
         classes.push_back(line);
     }
+    return 0;
+}
 
-    string cfg_file =  path + "yolo/yolov4-tiny.cfg";
-    string model_file = path + "yolo/yolov4-tiny.weights";
+Net load_net() {
+    string cfg_file = path + "yolov4-leaky-416.cfg";
+    string model_file = path + "yolov4-leaky-416.weights";
+    return readNet(model_file, cfg_file);
+}
 
-    Net net = readNet(model_file, cfg_file);
-    namedWindow(windowName, WINDOW_AUTOSIZE);
+int main() {
+    load_classes();
+    Net net = load_net();
 
-    capture.open(path + "sample.mp4");
-
+    capture.open(path + "sample3.mp4");
     if (!capture.isOpened()) {
         cerr << "Video is not opened" << endl;
         return 1;
     }
+
+    namedWindow(windowName, 0);
 
     Mat blob;
 
@@ -103,8 +122,7 @@ int main() {
         if (frame.empty()) break;
 
         blobFromImage(frame, blob, 1., Size(416, 416), Scalar(), true);
-
-        net.setInput(blob, "", 0.00392, Scalar(0,0,0));
+        net.setInput(blob, "", 0.00392, Scalar(0, 0, 0));
 
         vector<string> outNames = net.getUnconnectedOutLayersNames();
         vector<Mat> outs;
@@ -113,24 +131,34 @@ int main() {
         Point classIdPoint;
 
         Mat prob = net.forward();
-
         double confidence;
 
         minMaxLoc(prob, 0, &confidence, 0, &classIdPoint);
 
-        int classId = classIdPoint.x;
+        auto start = std::chrono::high_resolution_clock::now();
 
         postProcessing(outs, net);
 
-        // string label = format("%s: %.2f", classes[classId].c_str(), confidence);
+        auto end = std::chrono::high_resolution_clock::now();
+        int time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        string processing_time = format("Processing Time: %dms", time_elapsed);
 
-        // rectangle(frame, Point(0, frame.rows - 30), Point(frame.cols, frame.rows), CV_RGB(0, 0, 0), FILLED);
-
-        // putText(frame, label, Point(0, frame.rows-7), FONT_HERSHEY_SIMPLEX, 0.8,
-        // CV_RGB(255,255,255), 2, LINE_AA);
+        rectangle(frame, Point(0, frame.rows - 30), Point(frame.cols, frame.rows), CV_RGB(0, 0, 0), FILLED);
+        putText(frame, processing_time, Point(0, frame.rows - 7), FONT_HERSHEY_SIMPLEX, 0.8,
+                CV_RGB(255, 255, 255), 2, LINE_AA);
 
         imshow(windowName, frame);
+        resizeWindow(windowName, 800, 600);
+
+
+        bool no = true;
 
         if (key == 27) break;
+        if (key != 27 && no) {
+            show_all = !show_all;
+            no = !no;
+            cerr <<  key << endl;
+            cerr <<  "key pressed!" << endl;
+        }
     }
 }
